@@ -75,7 +75,6 @@ export default function FootballBot() {
   const [result, setResult] = useState(null);
   const [aiError, setAiError] = useState("");
   const [search, setSearch] = useState("");
-  const [apiKey, setApiKey] = useState("");
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -84,9 +83,10 @@ export default function FootballBot() {
     setFixError(""); 
     setFixtures([]);
 
+    // Using the free development live key
     const urls = [
-      `https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${lg.id}`,
-      `https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${lg.id}`,
+      `https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=${lg.id}`,
+      `https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=${lg.id}`,
     ];
 
     let found = [];
@@ -118,7 +118,6 @@ export default function FootballBot() {
     }
 
     if (found.length > 0) {
-      // Clean duplicates by event ID
       const uniqueFixtures = Object.values(
         found.reduce((acc, current) => ({ ...acc, [current.id]: current }), {})
       );
@@ -143,12 +142,6 @@ export default function FootballBot() {
     setAiError(""); 
     setLoadingAI(true); 
     setResult(null);
-
-    if (!apiKey.trim()) {
-      setAiError("Please type or paste your Anthropic API Key in the configurations bar first.");
-      setLoadingAI(false);
-      return;
-    }
 
     const prompt = `You are the world's best football prediction analyst. Combine Poisson modelling, ELO ratings, xG analysis, and tactical intelligence.
 
@@ -225,7 +218,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "x-api-key": apiKey.trim(),
+          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY, 
           "anthropic-version": "2023-06-01",
           "anthropic-dangerously-allow-browser": "true"
         },
@@ -250,7 +243,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
       setStep("result");
     } catch (err) {
       console.error("Analysis Exception Details:", err);
-      setAiError(`Analysis Failed: ${err.message || "Ensure your API key is correct and CORS restrictions are managed."}`);
+      setAiError(`Analysis Failed: ${err.message || "Ensure Vercel environment keys are active."}`);
     } finally {
       setLoadingAI(false);
     }
@@ -314,20 +307,6 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Secret Configs Panel Bar */}
-      <div style={{ maxWidth: 860, margin: "10px auto 0", padding: "0 1.25rem" }}>
-        <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 10, padding: "10px 14px", display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={{ fontSize: 10, color: "#666", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em" }}>Anthropic Key:</span>
-          <input 
-            type="password" 
-            value={apiKey} 
-            onChange={e => setApiKey(e.target.value)} 
-            placeholder="Paste your secret sk-ant-... key here" 
-            style={{ flex: 1, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "6px 10px", color: "#fff", fontSize: 12, outline: "none", fontFamily: "monospace" }}
-          />
         </div>
       </div>
 
