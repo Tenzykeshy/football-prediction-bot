@@ -12,6 +12,20 @@ export default async function handler(req, res) {
   const prompt = body.prompt;
   const leagueId = String(body.leagueId || '').trim();
 
+  // Helper function to handle network retries gracefully
+  const fetchWithRetry = async (url, retries = 3, delay = 150) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await fetch(url);
+        if (response.ok) return response;
+      } catch (err) {
+        if (i === retries - 1) throw err;
+      }
+      await new Promise(res => setTimeout(res, delay));
+    }
+    throw new Error("API failed after " + retries + " attempts.");
+  };
+
   // ──── AUTOMATED LIVE FIXTURES HUB ────
   if (type === 'fixtures') {
     try {
@@ -19,15 +33,12 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Missing leagueId routing parameter." });
       }
 
-      // Calls the fully open, unblocked global repository feed
       const databaseUrl = "https://api-football-v1.mexico-mx.com/v3/fixtures?league=" + leagueId + "&next=20";
       
-      const response = await fetch(databaseUrl);
-      if (!response.ok) throw new Error("Public match layer returned status " + response.status);
-      
+      // Uses the retry mechanic to smash through temporary timeouts
+      const response = await fetchWithRetry(databaseUrl);
       const data = await response.json();
       
-      // Map the nested layout array to match your front-end schema exactly
       const mappedEvents = (data.response || []).map(item => ({
         idEvent: item.fixture.id,
         strHomeTeam: item.teams.home.name,
@@ -42,7 +53,7 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ events: mappedEvents });
     } catch (err) {
-      return res.status(500).json({ error: "Serverless database connection timeout", details: err.message });
+      return res.status(500).json({ error: "Serverless pipeline timeout bypass", details: err.message });
     }
   }
 
