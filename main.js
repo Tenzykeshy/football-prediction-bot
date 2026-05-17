@@ -5,5 +5,5 @@ import FootballBot from './App.jsx'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <FootballBot />
-  </React.StrictMode>,
+  </React.StrictMode>
 )
