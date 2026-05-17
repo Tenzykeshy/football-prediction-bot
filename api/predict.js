@@ -1,7 +1,4 @@
-// api/predict.js (Serverless Backend Route running on Vercel)
-
 export default async function handler(req, res) {
-  // 1. Handle CORS headers so your frontend can talk to your backend safely
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,13 +7,17 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { type, leagueId, home, away, date, venue, extra, prompt } = req.body;
+  const { type, leagueId, prompt } = req.body;
 
-  // ──── CASE A: HANDLES THE FIXTURES ENGINE ────
+  // ──── CASE A: AUTOMATED MATCH ENGINE ────
   if (type === 'fixtures') {
     try {
-      const nextRes = await fetch(`https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=${leagueId}`);
-      const pastRes = await fetch(`https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=${leagueId}`);
+      // Fixed URL string concatenation so Node handles the league ID perfectly
+      const nextUrl = "https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=" + leagueId;
+      const pastUrl = "https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=" + leagueId;
+
+      const nextRes = await fetch(nextUrl);
+      const pastRes = await fetch(pastUrl);
       
       const nextData = await nextRes.json().catch(() => ({ events: [] }));
       const pastData = await pastRes.json().catch(() => ({ events: [] }));
@@ -24,18 +25,17 @@ export default async function handler(req, res) {
       const combinedEvents = [...(nextData.events || []), ...(pastData.events || [])];
       return res.status(200).json({ events: combinedEvents });
     } catch (err) {
-      return res.status(500).json({ error: "Failed to fetch fixtures backend side", details: err.message });
+      return res.status(500).json({ error: "Backend database parsing failure", details: err.message });
     }
   }
 
-  // ──── CASE B: HANDLES THE AI ANALYST ENGINE ────
+  // ──── CASE B: AI PREDICTION ANALYST ────
   if (type === 'predict') {
     try {
-      // Securely pulls your key from Vercel system dashboard safely away from public eyes
       const apiKey = process.env.VITE_ANTHROPIC_API_KEY; 
       
       if (!apiKey) {
-        return res.status(500).json({ error: "Backend missing VITE_ANTHROPIC_API_KEY config variable." });
+        return res.status(500).json({ error: "Missing VITE_ANTHROPIC_API_KEY variable in Vercel dashboard settings." });
       }
 
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -55,9 +55,9 @@ export default async function handler(req, res) {
       const data = await response.json();
       return res.status(200).json(data);
     } catch (err) {
-      return res.status(500).json({ error: "Anthropic server handshake failed", details: err.message });
+      return res.status(500).json({ error: "Claude server pipeline failure", details: err.message });
     }
   }
 
-  return res.status(400).json({ error: "Invalid request type" });
+  return res.status(400).json({ error: "Invalid action routing parameter" });
 }
