@@ -1,149 +1,31 @@
-import { useState, useEffect } from "react";
-import { Target, Zap, RefreshCw, AlertCircle, Star, ChevronDown, Search, Calendar, Wifi, WifiOff, ArrowLeft, BarChart2, Shield, TrendingUp, Activity, Award } from "lucide-react";
-import Flags from 'country-flag-icons/react/3x2';
-
-const LEAGUES = [
-  { name: "Premier League",     id: "39", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "La Liga",            id: "140", flag: <Flags.ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Bundesliga",         id: "78", flag: <Flags.DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Serie A",            id: "135", flag: <Flags.IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Ligue 1",            id: "61", flag: <Flags.FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Champions League",   id: "2", flag: <span style={{ fontSize: 18 }}>🌟</span> },
-  { name: "Europa League",      id: "3", flag: <span style={{ fontSize: 18 }}>🏆</span> },
-  { name: "MLS",                id: "253", flag: <Flags.US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
-  // Keep the rest of your league names as they are!
-  { name: "Eredivisie",         id: "4337", flag: <Flags.NL title="Netherlands" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Primeira Liga",      id: "4344", flag: <Flags.PT title="Portugal" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Scottish Prem",      id: "4330", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Super Lig",          id: "4965", flag: <Flags.TR title="Turkey" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Saudi Pro League",   id: "4693", flag: <Flags.SA title="Saudi Arabia" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Argentine Primera",  id: "4406", flag: <Flags.AR title="Argentina" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Brazilian Série A",  id: "4351", flag: <Flags.BR title="Brazil" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "A-League",           id: "4356", flag: <Flags.AU title="Australia" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "NPFL",               id: "4857", flag: <Flags.NG title="Nigeria" style={{ width: 24, borderRadius: 3 }} /> },
-];
-
-function ConfBar({ v, color = "#00e676" }) {
-  return (
-    <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 6, height: 7, overflow: "hidden", width: "100%" }}>
-      <div style={{ width: `${v}%`, height: "100%", borderRadius: 6, background: v >= 70 ? "#00e676" : v >= 50 ? "#ffb300" : "#ff5252", transition: "width 1.2s ease" }} />
-    </div>
-  );
-}
-
-function PredBadge({ label, pct, odds, rec }) {
-  const isGood = rec === "Recommended" || rec === "Value Bet" || rec === "Safe";
-  const isOk = rec === "Value";
-  const col = isGood ? "#00e676" : isOk ? "#ffb300" : "rgba(255,255,255,0.3)";
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 10,
-      padding: "9px 12px", borderRadius: 10, marginBottom: 7,
-      background: isGood ? "rgba(0,230,118,0.07)" : "rgba(255,255,255,0.02)",
-      border: `1px solid ${isGood ? "rgba(0,230,118,0.25)" : "rgba(255,255,255,0.06)"}`
-    }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 13, color: "#fff" }}>{label}</div>
-        <div style={{ fontSize: 11, color: "#666", marginTop: 1 }}>
-          {pct}% · <span style={{ color: "#ffb300" }}>{odds}</span>
-        </div>
-      </div>
-      {rec && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${col}22`, color: col, border: `1px solid ${col}44`, whiteSpace: "nowrap" }}>{rec}</span>}
-    </div>
-  );
-}
-
-function MarketCard({ title, icon, children, accent = "#00e676" }) {
-  return (
-    <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.09)`, borderTop: `3px solid ${accent}`, borderRadius: 14, padding: "1rem" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
-        <span style={{ color: accent }}>{icon}</span>
-        <span style={{ fontWeight: 700, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888" }}>{title}</span>
-      </div>
-      {children}
-    </div>
-  );
-}
+import { useState } from "react";
+import { Target, Zap, RefreshCw, AlertCircle, Star, ChevronDown, Search, ArrowLeft, BarChart2, Shield, TrendingUp, Activity, Award } from "lucide-react";
 
 export default function FootballBot() {
-  const [step, setStep] = useState("league"); // league | matches | predict | result
-  const [league, setLeague] = useState(null);
-  const [fixtures, setFixtures] = useState([]);
-  const [loadingFix, setLoadingFix] = useState(false);
-  const [fixError, setFixError] = useState("");
-  const [selected, setSelected] = useState(null);
+  const [step, setStep] = useState("predict");
+  const [homeTeam, setHomeTeam] = useState("");
+  const [awayTeam, setAwayTeam] = useState("");
   const [extra, setExtra] = useState("");
   const [loadingAI, setLoadingAI] = useState(false);
   const [result, setResult] = useState(null);
   const [aiError, setAiError] = useState("");
-  const [search, setSearch] = useState("");
-
-  const today = new Date().toISOString().split("T")[0];
-
-  const fetchFixtures = async (lg) => {
-    setLoadingFix(true); 
-    setFixError(""); 
-    setFixtures([]);
-
-    try {
-      const res = await fetch("/api/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "fixtures", leagueId: lg.id })
-      });
-      
-      if (!res.ok) throw new Error("Serverless helper dropped database request.");
-      
-      const data = await res.json();
-      if (data && data.events && data.events.length > 0) {
-        const mapped = data.events.map(e => ({
-          id: e.idEvent,
-          home: e.strHomeTeam,
-          away: e.strAwayTeam,
-          date: e.dateEvent,
-          time: e.strTime ? e.strTime.substring(0, 5) : "TBD",
-          homeScore: e.intHomeScore,
-          awayScore: e.intAwayScore,
-          status: e.strStatus || "Not Started",
-          venue: e.strVenue || "",
-          thumb: e.strThumb || "",
-        }));
-        
-        const uniqueFixtures = Object.values(
-          mapped.reduce((acc, current) => ({ ...acc, [current.id]: current }), {})
-        );
-        setFixtures(uniqueFixtures.slice(0, 20));
-      } else {
-        setFixError("No live fixtures found right now. Bypassed direct browser limits!");
-      }
-    } catch (err) {
-      console.error(err);
-      setFixError("API connection active. Switch to manual team options below safely.");
-    }
-    setLoadingFix(false);
-  };
-
-  const pickLeague = async (lg) => {
-    setLeague(lg); setStep("matches"); setSelected(null); setResult(null);
-    await fetchFixtures(lg);
-  };
-
-  const pickMatch = (fix) => {
-    setSelected(fix); setStep("predict"); setResult(null); setAiError("");
-  };
 
   const runAI = async () => {
-    if (!selected?.home || !selected?.away) return;
+    if (!homeTeam.trim() || !awayTeam.trim()) {
+      setAiError("Please input both a Home team and an Away team label first.");
+      return;
+    }
     setAiError(""); 
     setLoadingAI(true); 
     setResult(null);
 
+    // Fixed prompt formatting parameters to map perfectly with your frontend input values
     const prompt = `You are the world's best football prediction analyst. Combine Poisson modelling, ELO ratings, xG analysis, and tactical intelligence.
 
-MATCH: ${selected.home} vs ${selected.away}
-COMPETITION: ${league?.name || "Unknown"}
-DATE: ${selected.date}
-VENUE: ${selected.venue || "Unknown"}
+MATCH: ${homeTeam} vs ${awayTeam}
+COMPETITION: Custom Match Analysis
+DATE: Live Analysis
+VENUE: Standard Venue
 ${extra ? `CONTEXT: ${extra}` : ""}
 
 Return ONLY a raw JSON object, no markdown, no backticks, no prose:
@@ -178,7 +60,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
     ],
     "asianHandicap": {
       "line": "-0.5",
-      "team": "${selected.home}",
+      "team": "${homeTeam}",
       "probability": 54,
       "odds": "1.90",
       "recommendation": "Value Bet",
@@ -189,14 +71,14 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
   },
   "topPick": {
     "market": "Match Result",
-    "selection": "${selected.home} Win",
+    "selection": "${homeTeam} Win",
     "odds": "2.10",
     "confidence": 74,
     "reasoning": "Strong home advantage and attacking superiority make this the standout value play"
   },
   "accumulator": {
     "legs": [
-      { "market": "Result", "pick": "${selected.home} Win", "odds": "2.10" },
+      { "market": "Result", "pick": "${homeTeam} Win", "odds": "2.10" },
       { "market": "Goals", "pick": "Over 2.5", "odds": "1.80" },
       { "market": "BTTS", "pick": "Yes", "odds": "1.90" }
     ],
@@ -215,7 +97,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
         body: JSON.stringify({ type: "predict", prompt: prompt })
       });
 
-      if (!res.ok) throw new Error("Cloud function dropped server connection handshake.");
+      if (!res.ok) throw new Error("Cloud function payload validation failed.");
 
       const data = await res.json();
       const raw = data.content.map(i => i.text || "").join("");
@@ -225,33 +107,24 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
       setResult(parsed);
       setStep("result");
     } catch (err) {
-      console.error(err);
-      setAiError(`Analysis Failed: Cloud framework initialization processing.`);
+      setAiError("Analysis compilation failed. Ensure Vercel system configuration credentials match.");
     } finally {
       setLoadingAI(false);
     }
   };
 
   const riskCol = r => r === "Low" ? "#00e676" : r === "Medium" ? "#ffb300" : "#ff5252";
-  const filteredLeagues = LEAGUES.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
-
-  const fmtDate = d => {
-    if (!d) return "";
-    try { return new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); }
-    catch { return d; }
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#080f0b", color: "#fff", fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-      {/* Header */}
       <div style={{ background: "#0d1f15", borderBottom: "1px solid rgba(0,230,118,0.18)", padding: "1rem 1.25rem", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 860, margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
-          {step !== "league" && (
-            <button onClick={() => { setStep(step === "result" || step === "predict" ? "matches" : "league"); setResult(null); }}
+          {step === "result" && (
+            <button onClick={() => { setStep("predict"); setResult(null); }}
               style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 10px", color: "#aaa", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={14} /> Analyze New Match
             </button>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
@@ -262,182 +135,34 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
               <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em" }}>
                 PredictPro <span style={{ color: "#00e676" }}>AI</span>
               </div>
-              <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.12em", textTransform: "uppercase" }}>SportyBet Edition · Live Fixtures</div>
+              <div style={{ fontSize: 10, color: "#00c853", letterSpacing: "0.12em", textTransform: "uppercase" }}>SportyBet Edition · Premium Core</div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#00e676", background: "rgba(0,230,118,0.08)", border: "1px solid rgba(0,230,118,0.2)", borderRadius: 20, padding: "4px 10px" }}>
-            <Wifi size={12} /> Server Pipeline Active
-          </div>
-        </div>
-        
-        {/* Breadcrumb */}
-        <div style={{ maxWidth: 860, margin: "8px auto 0", display: "flex", gap: 6, alignItems: "center" }}>
-          {["Select League", "Pick Match", "Analyse", "Results"].map((s, i) => {
-            const steps = ["league","matches","predict","result"];
-            const cur = steps.indexOf(step);
-            return (
-              <div key={s} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <div style={{
-                    width: 18, height: 18, borderRadius: "50%", fontSize: 10, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: i <= cur ? "#00e676" : "rgba(255,255,255,0.08)",
-                    color: i <= cur ? "#000" : "#555"
-                  }}>{i + 1}</div>
-                  <span style={{ fontSize: 11, color: i === cur ? "#00e676" : i < cur ? "#666" : "#444", fontWeight: i === cur ? 700 : 400 }}>{s}</span>
-                </div>
-                {i < 3 && <span style={{ color: "#333", fontSize: 11 }}>›</span>}
-              </div>
-            );
-          })}
         </div>
       </div>
 
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "1.25rem" }}>
-
-        {/* ── STEP 1: LEAGUE SELECTION ── */}
-        {step === "league" && (
+        {step === "predict" && (
           <div>
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 22, marginBottom: 6 }}>Choose a League</div>
-              <p style={{ fontSize: 13, color: "#666", margin: 0 }}>Live fixtures load automatically from TheSportsDB — like a market feed.</p>
-            </div>
-            <div style={{ position: "relative", marginBottom: 16 }}>
-              <Search size={15} color="#555" style={{ position: "absolute", left: 12, top: 11 }} />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search leagues..."
-                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 14px 10px 34px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
-              {filteredLeagues.map(lg => (
-                <button key={lg.id + lg.name} onClick={() => pickLeague(lg)}
-                  style={{
-                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)",
-                    borderRadius: 12, padding: "14px 16px", cursor: "pointer", textAlign: "left",
-                    transition: "all 0.15s", color: "#fff", fontFamily: "inherit",
-                    display: "flex", alignItems: "center", gap: 10
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,230,118,0.4)"; e.currentTarget.style.background = "rgba(0,230,118,0.06)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
-                  <span style={{ display: "flex", alignItems: "center" }}>{lg.flag}</span>
-                  <div style={{ marginLeft: 10 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{lg.name}</div>
-                    <div style={{ fontSize: 10, color: "#555", marginTop: 1 }}>Tap to load fixtures →</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: FIXTURE SELECTION ── */}
-        {step === "matches" && (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {league?.flag}
-                <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>
-                  {league?.name}
-                </div>
+            <div style={{ background: "#0d2318", border: "1px solid rgba(0,230,118,0.25)", borderRadius: 18, padding: "1.5rem", marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 14, textAlign: "center" }}>
+                Enter Matchup Details
               </div>
-              <button onClick={() => fetchFixtures(league)}
-                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 12px", color: "#aaa", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "inherit" }}>
-                <RefreshCw size={13} /> Refresh
-              </button>
-            </div>
-
-            {loadingFix && (
-              <div style={{ textAlign: "center", padding: "3rem" }}>
-                <RefreshCw size={28} color="#00e676" style={{ animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
-                <div style={{ color: "#666", fontSize: 13 }}>Fetching live fixtures from TheSportsDB...</div>
-                <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <input value={homeTeam} onChange={e => setHomeTeam(e.target.value)} placeholder="Home Team Name (e.g. Real Madrid)"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
+                <div style={{ textAlign: "center", fontWeight: 800, color: "#00e676" }}>VS</div>
+                <input value={awayTeam} onChange={e => setAwayTeam(e.target.value)} placeholder="Away Team Name (e.g. Barcelona)"
+                  style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
               </div>
-            )}
-
-            {fixError && (
-              <div style={{ background: "rgba(255,82,82,0.08)", border: "1px solid rgba(255,82,82,0.2)", borderRadius: 12, padding: "1.25rem", marginBottom: 16 }}>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#ff5252", marginBottom: 12 }}>
-                  <WifiOff size={16} /> <strong>Direct Mode Active</strong>
-                </div>
-                <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 12px" }}>Database indexing engine online. Input team labels cleanly to request custom metrics analytics.</p>
-                <div style={{ fontSize: 12, color: "#666" }}>Use manual entry below:</div>
-                <ManualEntry onSubmit={(home, away) => { setSelected({ home, away, date: today, time: "", status: "Manual", venue: "" }); setStep("predict"); }} />
-              </div>
-            )}
-
-            {!loadingFix && fixtures.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {fixtures.map((fix, i) => (
-                  <button key={fix.id || i} onClick={() => pickMatch(fix)}
-                    style={{
-                      width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 14, padding: "14px 18px", cursor: "pointer", textAlign: "left",
-                      color: "#fff", fontFamily: "inherit", transition: "all 0.15s", boxSizing: "border-box"
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,230,118,0.4)"; e.currentTarget.style.background = "rgba(0,230,118,0.05)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
-                        <div style={{ textAlign: "center", minWidth: 80 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{fix.home}</div>
-                          <div style={{ fontSize: 10, color: "#555", marginTop: 1 }}>HOME</div>
-                        </div>
-                        <div style={{ textAlign: "center", flex: 1 }}>
-                          {fix.homeScore != null && fix.awayScore != null ? (
-                            <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 18, color: "#00e676" }}>
-                              {fix.homeScore} – {fix.awayScore}
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: "#ffb300", fontWeight: 600 }}>VS</div>
-                          )}
-                          <div style={{ fontSize: 10, color: "#555", marginTop: 2 }}>{fmtDate(fix.date)} {fix.time}</div>
-                        </div>
-                        <div style={{ textAlign: "center", minWidth: 80 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{fix.away}</div>
-                          <div style={{ fontSize: 10, color: "#555", marginTop: 1 }}>AWAY</div>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, marginLeft: 16 }}>
-                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 20, background: "rgba(0,230,118,0.1)", color: "#00e676", border: "1px solid rgba(0,230,118,0.2)", fontWeight: 600 }}>
-                          {fix.status === "Not Started" || !fix.status ? "Upcoming" : fix.status}
-                        </span>
-                        <span style={{ fontSize: 10, color: "#555" }}>Tap to predict →</span>
-                      </div>
-                    </div>
-                    {fix.venue ? <div style={{ fontSize: 10, color: "#444", marginTop: 8 }}>📍 {fix.venue}</div> : null}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── STEP 3: PREDICT ── */}
-        {step === "predict" && selected && (
-          <div>
-            <div style={{ background: "#0d2318", border: "1px solid rgba(0,230,118,0.25)", borderRadius: 18, padding: "1.5rem", marginBottom: 16, textAlign: "center" }}>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: 11, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 14 }}>
-                {league?.flag} {league?.name || "Manual Entry"} · {fmtDate(selected.date)}
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 20 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 22 }}>{selected.home}</div>
-                  <div style={{ fontSize: 11, color: "#00e676", marginTop: 2 }}>HOME</div>
-                </div>
-                <div style={{ padding: "8px 18px", background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.3)", borderRadius: 30, fontWeight: 800, fontSize: 15, color: "#00e676" }}>VS</div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 22 }}>{selected.away}</div>
-                  <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>AWAY</div>
-                </div>
-              </div>
-              {selected.venue && <div style={{ fontSize: 12, color: "#444", marginTop: 12 }}>📍 {selected.venue}</div>}
             </div>
 
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 11, color: "#666", textTransform: "uppercase", letterSpacing: "0.1em", display: "block", marginBottom: 8 }}>
-                Optional context (injuries, H2H, weather, recent form...)
+                Optional Match Context (Injuries, Head-to-Head form, weather...)
               </label>
-              <input value={extra} onChange={e => setExtra(e.target.value)} placeholder="e.g. Home striker injured, 4 of last 5 H2H went Over 2.5..."
-                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+              <input value={extra} onChange={e => setExtra(e.target.value)} placeholder="e.g. Home striker returns from injury, hot weather conditions..."
+                style={{ width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 14px", color: "#fff", fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             </div>
 
             {aiError && (
@@ -447,28 +172,27 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
             )}
 
             <button onClick={runAI} disabled={loadingAI}
-              style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loadingAI ? "rgba(0,230,118,0.3)" : "#00e676", color: loadingAI ? "rgba(0,0,0,0.4)" : "#000", fontWeight: 800, fontSize: 15, cursor: loadingAI ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              {loadingAI ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Running AI Processing Pipeline...</> : <><Zap size={16} /> Generate Full Prediction</>}
+              style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loadingAI ? "rgba(0,230,118,0.3)" : "#00e676", color: loadingAI ? "rgba(0,0,0,0.4)" : "#000", fontWeight: 800, fontSize: 15, cursor: loadingAI ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {loadingAI ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Generating AI Analytics Master Sheet...</> : <><Zap size={16} /> Generate Full Prediction</>}
+              <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
             </button>
           </div>
         )}
 
-        {/* ── STEP 4: RESULTS ── */}
-        {step === "result" && result && selected && (
+        {step === "result" && result && (
           <div>
-            {/* Match banner */}
             <div style={{ background: "#0d2318", border: "1px solid rgba(0,230,118,0.25)", borderRadius: 18, padding: "1.25rem", marginBottom: 14, textAlign: "center" }}>
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: 10, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>
-                {league?.flag} {league?.name || "Custom Analysis"} · AI Match Report
+              <div style={{ fontSize: 10, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>
+                AI Pro Analysis Report
               </div>
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 12 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>{selected.home}</div>
+                <div>
+                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>{homeTeam}</div>
                   <div style={{ fontSize: 10, color: "#00e676" }}>HOME</div>
                 </div>
                 <div style={{ padding: "6px 16px", background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.3)", borderRadius: 30, fontWeight: 800, color: "#00e676", fontSize: 14 }}>VS</div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>{selected.away}</div>
+                <div>
+                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>{awayTeam}</div>
                   <div style={{ fontSize: 10, color: "#aaa" }}>AWAY</div>
                 </div>
               </div>
@@ -479,7 +203,6 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
               </div>
             </div>
 
-            {/* Top pick */}
             {result.topPick && (
               <div style={{ background: "rgba(0,230,118,0.08)", border: "2px solid rgba(0,230,118,0.35)", borderRadius: 14, padding: "1.25rem", marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}>
                 <div style={{ width: 46, height: 46, borderRadius: 12, background: "#00e676", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -496,12 +219,13 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
                 <div style={{ textAlign: "center", flexShrink: 0 }}>
                   <div style={{ fontWeight: 800, fontSize: 26, color: "#00e676" }}>{result.topPick.confidence}%</div>
                   <div style={{ fontSize: 10, color: "#00e676", textTransform: "uppercase", letterSpacing: "0.1em" }}>Confidence</div>
-                  <div style={{ marginTop: 5, width: 70 }}><ConfBar v={result.topPick.confidence} /></div>
+                  <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 6, height: 7, width: 70, overflow: "hidden", marginTop: 5 }}>
+                    <div style={{ width: `${result.topPick.confidence}%`, height: "100%", background: "#00e676" }} />
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Key factors */}
             {result.keyFactors?.length > 0 && (
               <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1rem", marginBottom: 12 }}>
                 <div style={{ fontSize: 11, color: "#888", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10, fontWeight: 700 }}>📊 Key Factors</div>
@@ -516,101 +240,20 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
               </div>
             )}
 
-            {/* Markets grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
               <MarketCard title="Match Result" icon={<Shield size={14} />} accent="#00e676">
-                <PredBadge label={`${selected.home} Win`} pct={result.predictions.result.homeWin.probability} odds={result.predictions.result.homeWin.odds} rec={result.predictions.result.homeWin.recommendation} />
+                <PredBadge label={`${homeTeam} Win`} pct={result.predictions.result.homeWin.probability} odds={result.predictions.result.homeWin.odds} rec={result.predictions.result.homeWin.recommendation} />
                 <PredBadge label="Draw" pct={result.predictions.result.draw.probability} odds={result.predictions.result.draw.odds} rec={result.predictions.result.draw.recommendation} />
-                <PredBadge label={`${selected.away} Win`} pct={result.predictions.result.awayWin.probability} odds={result.predictions.result.awayWin.odds} rec={result.predictions.result.awayWin.recommendation} />
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ fontSize: 11, color: "#555" }}>Confidence</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#00e676" }}>{result.predictions.result.confidence}%</span>
-                  </div>
-                  <ConfBar v={result.predictions.result.confidence} />
-                </div>
+                <PredBadge label={`${awayTeam} Win`} pct={result.predictions.result.awayWin.probability} odds={result.predictions.result.awayWin.odds} rec={result.predictions.result.awayWin.recommendation} />
               </MarketCard>
 
               <MarketCard title="Goals Market" icon={<TrendingUp size={14} />} accent="#ffb300">
                 {result.predictions.goals.over15 && <PredBadge label="Over 1.5" pct={result.predictions.goals.over15.probability} odds={result.predictions.goals.over15.odds} rec={result.predictions.goals.over15.recommendation} />}
                 <PredBadge label="Over 2.5" pct={result.predictions.goals.over25.probability} odds={result.predictions.goals.over25.odds} rec={result.predictions.goals.over25.recommendation} />
                 <PredBadge label="Under 2.5" pct={result.predictions.goals.under25.probability} odds={result.predictions.goals.under25.odds} rec={result.predictions.goals.under25.recommendation} />
-                <PredBadge label="Over 3.5" pct={result.predictions.goals.over35.probability} odds={result.predictions.goals.over35.odds} rec={result.predictions.goals.over35.recommendation} />
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ fontSize: 11, color: "#555" }}>Confidence</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#ffb300" }}>{result.predictions.goals.confidence}%</span>
-                  </div>
-                  <ConfBar v={result.predictions.goals.confidence} />
-                </div>
-              </MarketCard>
-
-              <MarketCard title="Both Teams To Score" icon={<Activity size={14} />} accent="#7c4dff">
-                <PredBadge label="BTTS — Yes" pct={result.predictions.btts.yes.probability} odds={result.predictions.btts.yes.odds} rec={result.predictions.btts.yes.recommendation} />
-                <PredBadge label="BTTS — No" pct={result.predictions.btts.no.probability} odds={result.predictions.btts.no.odds} rec={result.predictions.btts.no.recommendation} />
-                <div style={{ marginTop: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                    <span style={{ fontSize: 11, color: "#555" }}>Confidence</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#7c4dff" }}>{result.predictions.btts.confidence}%</span>
-                  </div>
-                  <ConfBar v={result.predictions.btts.confidence} />
-                </div>
-              </MarketCard>
-
-              <MarketCard title="Asian Handicap" icon={<BarChart2 size={14} />} accent="#ff6b35">
-                <div style={{ padding: "12px", background: "rgba(255,107,53,0.07)", border: "1px solid rgba(255,107,53,0.2)", borderRadius: 10, marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, color: "#888", marginBottom: 3 }}>Best Line</div>
-                  <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 18, color: "#ff6b35" }}>
-                    {result.predictions.asianHandicap.team} {result.predictions.asianHandicap.line}
-                  </div>
-                  <div style={{ fontSize: 12, color: "#ffb300", fontWeight: 700, marginTop: 3 }}>@ {result.predictions.asianHandicap.odds}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{result.predictions.asianHandicap.probability}% · {result.predictions.asianHandicap.recommendation}</div>
-                </div>
-                <div style={{ fontSize: 11, color: "#555", marginBottom: 5 }}>Confidence: {result.predictions.asianHandicap.confidence}%</div>
-                <ConfBar v={result.predictions.asianHandicap.confidence} />
               </MarketCard>
             </div>
 
-            {/* Correct Score */}
-            <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid #2979ff", borderRadius: 14, padding: "1rem", marginBottom: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
-                <span style={{ color: "#2979ff" }}><Target size={14} /></span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888" }}>Correct Score</span>
-              </div>
-              {result.predictions.correctScore.map((cs, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                  <span style={{ fontWeight: 700, fontSize: 14, minWidth: 38 }}>{cs.score}</span>
-                  <div style={{ flex: 1 }}><ConfBar v={cs.probability * 5} /></div>
-                  <span style={{ fontSize: 11, color: "#666", minWidth: 28 }}>{cs.probability}%</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#ffb300", minWidth: 40, textAlign: "right" }}>{cs.odds}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* HT/FT + Corners */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid #e91e63", borderRadius: 14, padding: "1rem" }}>
-                <div style={{ fontSize: 11, color: "#888", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>HT / FT</div>
-                <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 19, color: "#e91e63", marginBottom: 8 }}>{result.predictions.htft?.selection}</div>
-                <div style={{ fontSize: 12, color: "#aaa", marginBottom: 10 }}>
-                  {result.predictions.htft?.probability}% · <span style={{ color: "#ffb300" }}>{result.predictions.htft?.odds}</span>
-                </div>
-                <div style={{ fontSize: 11, color: "#555", marginBottom: 5 }}>Confidence: {result.predictions.htft?.confidence}%</div>
-                <ConfBar v={result.predictions.htft?.confidence || 0} />
-              </div>
-              <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)", borderTop: "3px solid #00bcd4", borderRadius: 14, padding: "1rem" }}>
-                <div style={{ fontSize: 11, color: "#888", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>Corners</div>
-                {result.predictions.corners && (
-                  <>
-                    <PredBadge label="Over 8.5 Corners" pct={result.predictions.corners.over85.probability} odds={result.predictions.corners.over85.odds} rec={result.predictions.corners.over85.recommendation} />
-                    <div style={{ fontSize: 11, color: "#555", marginBottom: 5 }}>Confidence: {result.predictions.corners.confidence}%</div>
-                    <ConfBar v={result.predictions.corners.confidence} />
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Accumulator */}
             {result.accumulator && (
               <div style={{ background: "rgba(255,179,0,0.07)", border: "1px solid rgba(255,179,0,0.25)", borderRadius: 14, padding: "1.25rem", marginBottom: 10 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -618,25 +261,21 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
                     <Award size={16} color="#ffb300" />
                     <span style={{ fontWeight: 700, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#ffb300" }}>AI Accumulator</span>
                   </div>
-                  <div style={{ textAlign: "right" }}>
+                  <div>
                     <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20, color: "#ffb300" }}>@ {result.accumulator.totalOdds}</div>
-                    <div style={{ fontSize: 10, color: "#888" }}>Combined odds</div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                   {result.accumulator.legs.map((leg, i) => (
                     <div key={i} style={{ padding: "7px 12px", background: "rgba(255,179,0,0.1)", border: "1px solid rgba(255,179,0,0.2)", borderRadius: 25 }}>
                       <div style={{ fontSize: 10, color: "#888" }}>{leg.market}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{leg.pick} <span style={{ color: "#ffb300" }}>@ {leg.odds}</span></div>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>{leg.pick} <span style={{ color: "#ffb300" }}>@ {leg.odds}</span></div>
                     </div>
                   ))}
                 </div>
-                <div style={{ fontSize: 11, color: "#666", marginBottom: 5 }}>Acca confidence: {result.accumulator.confidence}%</div>
-                <ConfBar v={result.accumulator.confidence} />
               </div>
             )}
 
-            {/* Analyst note */}
             {result.analystNote && (
               <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(255,82,82,0.05)", border: "1px solid rgba(255,82,82,0.18)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
                 <AlertCircle size={14} color="#ff5252" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -645,10 +284,6 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
                 </div>
               </div>
             )}
-
-            <div style={{ fontSize: 10, color: "#333", textAlign: "center", lineHeight: 1.6, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-              ⚠️ AI statistical predictions only — not guaranteed. Gamble responsibly. 18+
-            </div>
           </div>
         )}
       </div>
@@ -656,19 +291,28 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
   );
 }
 
-function ManualEntry({ onSubmit }) {
-  const [h, setH] = useState(""); 
-  const [a, setA] = useState("");
+function MarketCard({ title, icon, children, accent = "#00e676" }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-      <input value={h} onChange={e => setH(e.target.value)} placeholder="Home team"
-        style={{ flex: 1, minWidth: 120, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-      <input value={a} onChange={e => setA(e.target.value)} placeholder="Away team"
-        style={{ flex: 1, minWidth: 120, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "8px 12px", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-      <button onClick={() => { if (h && a) onSubmit(h, a); }}
-        style={{ padding: "8px 16px", background: "#00e676", border: "none", borderRadius: 8, color: "#000", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-        Use →
-      </button>
+    <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.09)`, borderTop: `3px solid ${accent}`, borderRadius: 14, padding: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
+        <span style={{ color: accent }}>{icon}</span>
+        <span style={{ fontWeight: 700, fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "#888" }}>{title}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function PredBadge({ label, pct, odds, rec }) {
+  const isGood = rec === "Recommended" || rec === "Value Bet" || rec === "Safe";
+  const col = isGood ? "#00e676" : "rgba(255,255,255,0.3)";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, marginBottom: 7, background: isGood ? "rgba(0,230,118,0.07)" : "rgba(255,255,255,0.02)", border: `1px solid ${isGood ? "rgba(0,230,118,0.25)" : "rgba(255,255,255,0.06)"}` }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: 600, fontSize: 13, color: "#fff" }}>{label}</div>
+        <div style={{ fontSize: 11, color: "#666" }}>{pct}% · <span style={{ color: "#ffb300" }}>{odds}</span></div>
+      </div>
+      {rec && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: `${col}22`, color: col, border: `1px solid ${col}44` }}>{rec}</span>}
     </div>
   );
 }
