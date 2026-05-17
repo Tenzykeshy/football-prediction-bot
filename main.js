@@ -1,6 +1,9 @@
-// Import your bot component dynamically
-import FootballBot from './gemini-code-1779017287152.js';
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import FootballBot from './App.jsx'
 
-// Render it into the HTML root div
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<FootballBot />);
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <FootballBot />
+  </React.StrictMode>,
+)
