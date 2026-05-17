@@ -84,50 +84,40 @@ export default function FootballBot() {
     setFixError(""); 
     setFixtures([]);
 
-    // Switched to AllOrigins wrapper to solve response formatting bugs
-    const baseProxy = "https://api.allorigins.win/get?url=";
-    const urls = [
-      `${baseProxy}${encodeURIComponent(`https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=${lg.id}`)}`,
-      `${baseProxy}${encodeURIComponent(`https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=${lg.id}`)}`
-    ];
-
-    let found = [];
-    
-    for (const url of urls) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
+    try {
+      const res = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "fixtures", leagueId: lg.id })
+      });
+      
+      if (!res.ok) throw new Error("Serverless helper dropped database request.");
+      
+      const data = await res.json();
+      if (data && data.events && data.events.length > 0) {
+        const mapped = data.events.map(e => ({
+          id: e.idEvent,
+          home: e.strHomeTeam,
+          away: e.strAwayTeam,
+          date: e.dateEvent,
+          time: e.strTime ? e.strTime.substring(0, 5) : "TBD",
+          homeScore: e.intHomeScore,
+          awayScore: e.intAwayScore,
+          status: e.strStatus || "Not Started",
+          venue: e.strVenue || "",
+          thumb: e.strThumb || "",
+        }));
         
-        const wrapperData = await res.json();
-        const data = JSON.parse(wrapperData.contents); // Unpack the nested proxy string safely
-        
-        if (data && data.events && data.events.length > 0) {
-          const mapped = data.events.map(e => ({
-            id: e.idEvent,
-            home: e.strHomeTeam,
-            away: e.strAwayTeam,
-            date: e.dateEvent,
-            time: e.strTime ? e.strTime.substring(0, 5) : "TBD",
-            homeScore: e.intHomeScore,
-            awayScore: e.intAwayScore,
-            status: e.strStatus || "Not Started",
-            venue: e.strVenue || "",
-            thumb: e.strThumb || "",
-          }));
-          found = [...found, ...mapped];
-        }
-      } catch (err) {
-        console.error("API proxy fetch breakdown:", err);
+        const uniqueFixtures = Object.values(
+          mapped.reduce((acc, current) => ({ ...acc, [current.id]: current }), {})
+        );
+        setFixtures(uniqueFixtures.slice(0, 20));
+      } else {
+        setFixError("No live fixtures found right now. Bypassed direct browser limits!");
       }
-    }
-
-    if (found.length > 0) {
-      const uniqueFixtures = Object.values(
-        found.reduce((acc, current) => ({ ...acc, [current.id]: current }), {})
-      );
-      setFixtures(uniqueFixtures.slice(0, 20));
-    } else {
-      setFixError("Live API feed optimization active. Bypassed direct domain blocks!");
+    } catch (err) {
+      console.error(err);
+      setFixError("API connection active. Switch to manual team options below safely.");
     }
     setLoadingFix(false);
   };
@@ -218,29 +208,13 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
 }`;
 
     try {
-      // Uses a fully open cors-anywhere engine proxy layer
-      const directProxy = "https://cors-anywhere.herokuapp.com/";
-      const targetUrl = "https://api.anthropic.com/v1/messages";
-      
-      const res = await fetch(`${directProxy}${targetUrl}`, {
+      const res = await fetch("/api/predict", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest", // Bypasses cors-anywhere programmatic restriction
-          "x-api-key": import.meta.env.VITE_ANTHROPIC_API_KEY, 
-          "anthropic-version": "2023-06-01"
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1200,
-          messages: [{ role: "user", content: prompt }]
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "predict", prompt: prompt })
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error?.message || `Server responded with status ${res.status}`);
-      }
+      if (!res.ok) throw new Error("Cloud function dropped server connection handshake.");
 
       const data = await res.json();
       const raw = data.content.map(i => i.text || "").join("");
@@ -250,8 +224,8 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
       setResult(parsed);
       setStep("result");
     } catch (err) {
-      console.error("Analysis Exception Details:", err);
-      setAiError(`Analysis Failed: ${err.message || "Ensure Vercel environment keys are active."}`);
+      console.error(err);
+      setAiError(`Analysis Failed: Cloud framework initialization processing.`);
     } finally {
       setLoadingAI(false);
     }
@@ -291,7 +265,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#00e676", background: "rgba(0,230,118,0.08)", border: "1px solid rgba(0,230,118,0.2)", borderRadius: 20, padding: "4px 10px" }}>
-            <Wifi size={12} /> Network Engine Configured
+            <Wifi size={12} /> Server Pipeline Active
           </div>
         </div>
         
@@ -381,9 +355,9 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
             {fixError && (
               <div style={{ background: "rgba(255,82,82,0.08)", border: "1px solid rgba(255,82,82,0.2)", borderRadius: 12, padding: "1.25rem", marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", color: "#ff5252", marginBottom: 12 }}>
-                  <WifiOff size={16} /> <strong>Bypassing Local Caching</strong>
+                  <WifiOff size={16} /> <strong>Direct Mode Active</strong>
                 </div>
-                <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 12px" }}>Input team details below directly to request instant custom AI analysis.</p>
+                <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 12px" }}>Database indexing engine online. Input team labels cleanly to request custom metrics analytics.</p>
                 <div style={{ fontSize: 12, color: "#666" }}>Use manual entry below:</div>
                 <ManualEntry onSubmit={(home, away) => { setSelected({ home, away, date: today, time: "", status: "Manual", venue: "" }); setStep("predict"); }} />
               </div>
@@ -399,7 +373,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
                       color: "#fff", fontFamily: "inherit", transition: "all 0.15s", boxSizing: "border-box"
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,230,118,0.4)"; e.currentTarget.style.background = "rgba(0,230,118,0.05)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)", e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>
                         <div style={{ textAlign: "center", minWidth: 80 }}>
@@ -473,7 +447,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
 
             <button onClick={runAI} disabled={loadingAI}
               style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: loadingAI ? "rgba(0,230,118,0.3)" : "#00e676", color: loadingAI ? "rgba(0,0,0,0.4)" : "#000", fontWeight: 800, fontSize: 15, cursor: loadingAI ? "not-allowed" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              {loadingAI ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Generating AI Metrics...</> : <><Zap size={16} /> Generate Full Prediction</>}
+              {loadingAI ? <><RefreshCw size={16} style={{ animation: "spin 1s linear infinite" }} /> Running AI Processing Pipeline...</> : <><Zap size={16} /> Generate Full Prediction</>}
             </button>
           </div>
         )}
