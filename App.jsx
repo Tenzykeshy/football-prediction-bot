@@ -1,26 +1,26 @@
 import { useState, useEffect } from "react";
 import { Target, Zap, RefreshCw, AlertCircle, Star, ChevronDown, Search, Calendar, Wifi, WifiOff, ArrowLeft, BarChart2, Shield, TrendingUp, Activity, Award } from "lucide-react";
-// High-quality SVG flag components that work flawlessly on Windows, Android, and iOS
-import { GB, ES, DE, IT, FR, US, NL, PT, TR, SA, AR, BR, AU, NG } from 'country-flag-icons/react/3x2';
+// Imports the entire flag library package cleanly as an object wrapper
+import Flags from 'country-flag-icons/react/3x2';
 
 const LEAGUES = [
-  { name: "Premier League",     id: "4328", flag: <GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "La Liga",            id: "4335", flag: <ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Bundesliga",         id: "4331", flag: <DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Serie A",            id: "4332", flag: <IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Ligue 1",            id: "4334", flag: <FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Premier League",     id: "4328", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "La Liga",            id: "4335", flag: <Flags.ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Bundesliga",         id: "4331", flag: <Flags.DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Serie A",            id: "4332", flag: <Flags.IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Ligue 1",            id: "4334", flag: <Flags.FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
   { name: "Champions League",   id: "4480", flag: <span style={{ fontSize: 18 }}>🌟</span> },
   { name: "Europa League",      id: "4481", flag: <span style={{ fontSize: 18 }}>🏆</span> },
-  { name: "MLS",                id: "4346", flag: <US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Eredivisie",         id: "4337", flag: <NL title="Netherlands" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Primeira Liga",      id: "4344", flag: <PT title="Portugal" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Scottish Prem",      id: "4330", flag: <GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Super Lig",          id: "4965", flag: <TR title="Turkey" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Saudi Pro League",   id: "4693", flag: <SA title="Saudi Arabia" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Argentine Primera",  id: "4406", flag: <AR title="Argentina" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Brazilian Série A",  id: "4351", flag: <BR title="Brazil" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "A-League",           id: "4356", flag: <AU title="Australia" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "NPFL",               id: "4857", flag: <NG title="Nigeria" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "MLS",                id: "4346", flag: <Flags.US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Eredivisie",         id: "4337", flag: <Flags.NL title="Netherlands" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Primeira Liga",      id: "4344", flag: <Flags.PT title="Portugal" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Scottish Prem",      id: "4330", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Super Lig",          id: "4965", flag: <Flags.TR title="Turkey" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Saudi Pro League",   id: "4693", flag: <Flags.SA title="Saudi Arabia" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Argentine Primera",  id: "4406", flag: <Flags.AR title="Argentina" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Brazilian Série A",  id: "4351", flag: <Flags.BR title="Brazil" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "A-League",           id: "4356", flag: <Flags.AU title="Australia" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "NPFL",               id: "4857", flag: <Flags.NG title="Nigeria" style={{ width: 24, borderRadius: 3 }} /> },
 ];
 
 function ConfBar({ v, color = "#00e676" }) {
