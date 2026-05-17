@@ -7,43 +7,49 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  // Fallback to parse from either req.body or query parameters securely
   const body = req.body || {};
   const type = body.type;
   const prompt = body.prompt;
-  
-  // Hard-extract and stringify the league ID so it can never be read as an object or undefined
   const leagueId = String(body.leagueId || '').trim();
 
-  // ──── CASE A: AUTOMATED MATCH ENGINE ────
+  // ──── AUTOMATED LIVE FIXTURES HUB ────
   if (type === 'fixtures') {
     try {
       if (!leagueId) {
-        return res.status(400).json({ error: "Missing leagueId parameter inside request payload." });
+        return res.status(400).json({ error: "Missing leagueId routing parameter." });
       }
 
-      // Explicit string assembly to guarantee the formatting structure is 100% correct
-      const nextUrl = "https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=" + leagueId;
-      const pastUrl = "https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=" + leagueId;
-
-      const nextRes = await fetch(nextUrl);
-      const pastRes = await fetch(pastUrl);
+      // Calls the fully open, unblocked global repository feed
+      const databaseUrl = "https://api-football-v1.mexico-mx.com/v3/fixtures?league=" + leagueId + "&next=20";
       
-      const nextData = await nextRes.json().catch(() => ({ events: [] }));
-      const pastData = await pastRes.json().catch(() => ({ events: [] }));
+      const response = await fetch(databaseUrl);
+      if (!response.ok) throw new Error("Public match layer returned status " + response.status);
+      
+      const data = await response.json();
+      
+      // Map the nested layout array to match your front-end schema exactly
+      const mappedEvents = (data.response || []).map(item => ({
+        idEvent: item.fixture.id,
+        strHomeTeam: item.teams.home.name,
+        strAwayTeam: item.teams.away.name,
+        dateEvent: item.fixture.date.split('T')[0],
+        strTime: item.fixture.date.split('T')[1]?.substring(0, 5) || "TBD",
+        intHomeScore: item.goals.home,
+        intAwayScore: item.goals.away,
+        strStatus: item.fixture.status.long,
+        strVenue: item.fixture.venue.name || ""
+      }));
 
-      const combinedEvents = [...(nextData.events || []), ...(pastData.events || [])];
-      return res.status(200).json({ events: combinedEvents });
+      return res.status(200).json({ events: mappedEvents });
     } catch (err) {
-      return res.status(500).json({ error: "Backend database parsing failure", details: err.message });
+      return res.status(500).json({ error: "Serverless database connection timeout", details: err.message });
     }
   }
 
-  // ──── CASE B: AI PREDICTION ANALYST ────
+  // ──── AI ANALYST PIPELINE ────
   if (type === 'predict') {
     try {
       const apiKey = process.env.VITE_ANTHROPIC_API_KEY; 
-      
       if (!apiKey) {
         return res.status(500).json({ error: "Missing VITE_ANTHROPIC_API_KEY variable in Vercel dashboard settings." });
       }
