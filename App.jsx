@@ -1,24 +1,26 @@
 import { useState, useEffect } from "react";
 import { Target, Zap, RefreshCw, AlertCircle, Star, ChevronDown, Search, Calendar, Wifi, WifiOff, ArrowLeft, BarChart2, Shield, TrendingUp, Activity, Award } from "lucide-react";
+// High-quality SVG flag components that work flawlessly on Windows, Android, and iOS
+import { GB, ES, DE, IT, FR, US, NL, PT, TR, SA, AR, BR, AU, NG } from 'country-flag-icons/react/3x2';
 
 const LEAGUES = [
-  { name: "Premier League",     id: "4328", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { name: "La Liga",            id: "4335", flag: "🇪🇸" },
-  { name: "Bundesliga",         id: "4331", flag: "🇩🇪" },
-  { name: "Serie A",            id: "4332", flag: "🇮🇹" },
-  { name: "Ligue 1",            id: "4334", flag: "🇫🇷" },
-  { name: "Champions League",   id: "4480", flag: "🌟" },
-  { name: "Europa League",      id: "4481", flag: "🏆" },
-  { name: "MLS",                id: "4346", flag: "🇺🇸" },
-  { name: "Eredivisie",         id: "4337", flag: "🇳🇱" },
-  { name: "Primeira Liga",      id: "4344", flag: "🇵🇹" },
-  { name: "Scottish Prem",      id: "4330", flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
-  { name: "Super Lig",          id: "4965", flag: "🇹🇷" },
-  { name: "Saudi Pro League",   id: "4693", flag: "🇸🇦" },
-  { name: "Argentine Primera",  id: "4406", flag: "🇦🇷" },
-  { name: "Brazilian Série A",  id: "4351", flag: "🇧🇷" },
-  { name: "A-League",           id: "4356", flag: "🇦🇺" },
-  { name: "NPFL",               id: "4857", flag: "🇳🇬" },
+  { name: "Premier League",     id: "4328", flag: <GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "La Liga",            id: "4335", flag: <ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Bundesliga",         id: "4331", flag: <DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Serie A",            id: "4332", flag: <IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Ligue 1",            id: "4334", flag: <FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Champions League",   id: "4480", flag: <span style={{ fontSize: 18 }}>🌟</span> },
+  { name: "Europa League",      id: "4481", flag: <span style={{ fontSize: 18 }}>🏆</span> },
+  { name: "MLS",                id: "4346", flag: <US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Eredivisie",         id: "4337", flag: <NL title="Netherlands" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Primeira Liga",      id: "4344", flag: <PT title="Portugal" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Scottish Prem",      id: "4330", flag: <GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Super Lig",          id: "4965", flag: <TR title="Turkey" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Saudi Pro League",   id: "4693", flag: <SA title="Saudi Arabia" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Argentine Primera",  id: "4406", flag: <AR title="Argentina" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Brazilian Série A",  id: "4351", flag: <BR title="Brazil" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "A-League",           id: "4356", flag: <AU title="Australia" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "NPFL",               id: "4857", flag: <NG title="Nigeria" style={{ width: 24, borderRadius: 3 }} /> },
 ];
 
 function ConfBar({ v, color = "#00e676" }) {
@@ -83,10 +85,10 @@ export default function FootballBot() {
     setFixError(""); 
     setFixtures([]);
 
-    // Using the free development live key
+    const proxy = "https://corsproxy.io/?url=";
     const urls = [
-      `https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=${lg.id}`,
-      `https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=${lg.id}`,
+      `${proxy}${encodeURIComponent(`https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=${lg.id}`)}`,
+      `${proxy}${encodeURIComponent(`https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=${lg.id}`)}`
     ];
 
     let found = [];
@@ -214,7 +216,10 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
 }`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const proxy = "https://corsproxy.io/?url=";
+      const targetUrl = encodeURIComponent("https://api.anthropic.com/v1/messages");
+      
+      const res = await fetch(`${proxy}${targetUrl}`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -335,7 +340,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,230,118,0.4)"; e.currentTarget.style.background = "rgba(0,230,118,0.06)"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.09)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
-                  <span style={{ fontSize: 22 }}>{lg.flag}</span>
+                  <span style={{ display: "flex", alignItems: "center" }}>{lg.flag}</span>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 13 }}>{lg.name}</div>
                     <div style={{ fontSize: 10, color: "#555", marginTop: 1 }}>Tap to load fixtures →</div>
@@ -350,11 +355,11 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
         {step === "matches" && (
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                {league?.flag}
                 <div style={{ fontFamily: "'Syne'", fontWeight: 800, fontSize: 20 }}>
-                  {league?.flag} {league?.name}
+                  {league?.name}
                 </div>
-                <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>Upcoming fixtures from TheSportsDB — tap a match to analyse</div>
               </div>
               <button onClick={() => fetchFixtures(league)}
                 style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "7px 12px", color: "#aaa", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "inherit" }}>
@@ -432,8 +437,8 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
         {step === "predict" && selected && (
           <div>
             <div style={{ background: "#0d2318", border: "1px solid rgba(0,230,118,0.25)", borderRadius: 18, padding: "1.5rem", marginBottom: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 14 }}>
-                {league?.name || "Manual Entry"} · {fmtDate(selected.date)}
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: 11, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 14 }}>
+                {league?.flag} {league?.name || "Manual Entry"} · {fmtDate(selected.date)}
               </div>
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 20 }}>
                 <div style={{ textAlign: "center" }}>
@@ -475,7 +480,7 @@ Return ONLY a raw JSON object, no markdown, no backticks, no prose:
           <div>
             {/* Match banner */}
             <div style={{ background: "#0d2318", border: "1px solid rgba(0,230,118,0.25)", borderRadius: 18, padding: "1.25rem", marginBottom: 14, textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontSize: 10, color: "#00e676", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 10 }}>
                 {league?.flag} {league?.name || "Custom Analysis"} · AI Match Report
               </div>
               <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginBottom: 12 }}>
