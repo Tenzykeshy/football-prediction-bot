@@ -7,12 +7,22 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { type, leagueId, prompt } = req.body;
+  // Fallback to parse from either req.body or query parameters securely
+  const body = req.body || {};
+  const type = body.type;
+  const prompt = body.prompt;
+  
+  // Hard-extract and stringify the league ID so it can never be read as an object or undefined
+  const leagueId = String(body.leagueId || '').trim();
 
   // ──── CASE A: AUTOMATED MATCH ENGINE ────
   if (type === 'fixtures') {
     try {
-      // Fixed URL string concatenation so Node handles the league ID perfectly
+      if (!leagueId) {
+        return res.status(400).json({ error: "Missing leagueId parameter inside request payload." });
+      }
+
+      // Explicit string assembly to guarantee the formatting structure is 100% correct
       const nextUrl = "https://www.thesportsdb.com/api/v1/json/2/eventsnextleague.php?id=" + leagueId;
       const pastUrl = "https://www.thesportsdb.com/api/v1/json/2/eventspastleague.php?id=" + leagueId;
 
