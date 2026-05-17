@@ -3,14 +3,15 @@ import { Target, Zap, RefreshCw, AlertCircle, Star, ChevronDown, Search, Calenda
 import Flags from 'country-flag-icons/react/3x2';
 
 const LEAGUES = [
-  { name: "Premier League",     id: "4328", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "La Liga",            id: "4335", flag: <Flags.ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Bundesliga",         id: "4331", flag: <Flags.DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Serie A",            id: "4332", flag: <Flags.IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Ligue 1",            id: "4334", flag: <Flags.FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
-  { name: "Champions League",   id: "4480", flag: <span style={{ fontSize: 18 }}>🌟</span> },
-  { name: "Europa League",      id: "4481", flag: <span style={{ fontSize: 18 }}>🏆</span> },
-  { name: "MLS",                id: "4346", flag: <Flags.US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Premier League",     id: "39", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "La Liga",            id: "140", flag: <Flags.ES title="Spain" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Bundesliga",         id: "78", flag: <Flags.DE title="Germany" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Serie A",            id: "135", flag: <Flags.IT title="Italy" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Ligue 1",            id: "61", flag: <Flags.FR title="France" style={{ width: 24, borderRadius: 3 }} /> },
+  { name: "Champions League",   id: "2", flag: <span style={{ fontSize: 18 }}>🌟</span> },
+  { name: "Europa League",      id: "3", flag: <span style={{ fontSize: 18 }}>🏆</span> },
+  { name: "MLS",                id: "253", flag: <Flags.US title="United States" style={{ width: 24, borderRadius: 3 }} /> },
+  // Keep the rest of your league names as they are!
   { name: "Eredivisie",         id: "4337", flag: <Flags.NL title="Netherlands" style={{ width: 24, borderRadius: 3 }} /> },
   { name: "Primeira Liga",      id: "4344", flag: <Flags.PT title="Portugal" style={{ width: 24, borderRadius: 3 }} /> },
   { name: "Scottish Prem",      id: "4330", flag: <Flags.GB title="United Kingdom" style={{ width: 24, borderRadius: 3 }} /> },
